@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Library Management System</title>
+  <style>
+     body {
+      font-family: "Poppins", sans-serif;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 100px;
+      color: #161515;
+      background: #8ba4a8;
+    }
+    .container {
+      padding: 30px;
+      border-radius: 19px;
+      box-shadow: 5px 5px 30px;
+      background-color: #ffffff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #fffefe;
+      text-align: left;
+    }
+    th {
+      background-color: #000000;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .button {
+      background-color: #046f7d;
+      color: white;
+      padding: 10px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .button:hover {
+      background-color: #45a049;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .logo-container img {
+      width: 300px;
+      margin: -80px;
+      height: 300px;
+    }
+    h1 {
+      text-align: center;
+      margin: 20px 0;
+    }
+    h3 {
+      text-align: center;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LIBRARY MANAGEMENT SYSTEM</h1>
+    <h3>GOVERNMENT ENGINEERING COLLEGE WAYAND</h3>
+    <div class="logo-container">
+      <img src="COLLEGE-LOGO.png" alt="College Logo" />
+    </div>
+
+    <!-- Issue Book Form -->
+    <h2>Issue Book</h2>
+    <form id="issueBookForm">
+      <div class="form-group">
+        <label for="bookTitle">Book Title:</label>
+        <input type="text" id="bookTitle" name="book_title" required placeholder="Enter book title" />
+      </div>
+      <div class="form-group">
+        <label for="bookAuthor">Book Author:</label>
+        <input type="text" id="bookAuthor" name="book_author" required placeholder="Enter author name" />
+      </div>
+      <div class="form-group">
+        <label for="userName">User Name:</label>
+        <input type="text" id="userName" name="user_name" required placeholder="Enter user name" />
+      </div>
+      <div class="form-group">
+        <label for="userEmail">User Email:</label>
+        <input type="email" id="userEmail" name="user_email" required placeholder="Enter user email" />
+      </div>
+      <button type="submit" class="button">Issue Book</button>
+    </form>
+
+    <!-- Issued Books Table -->
+    <h2>Currently Issued Books</h2>
+    <table id="issuedBooks">
+      <thead>
+        <tr>
+          <th>Book Title</th>
+          <th>Author</th>
+          <th>User Name</th>
+          <th>Issue Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Will be populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      loadIssuedBooks();
+    });
+
+    // Load issued books
+    function loadIssuedBooks() {
+      fetch("get_issued_books.php")
+        .then((response) => response.json())
+        .then((issuedBooks) => {
+          const tbody = document.querySelector("#issuedBooks tbody");
+          tbody.innerHTML = "";
+          issuedBooks.forEach((issue) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${issue.title}</td>
+              <td>${issue.author}</td>
+              <td>${issue.user_name}</td>
+              <td>${issue.issue_date}</td>
+              <td><button onclick="returnBook(${issue.issue_id})" class="button">Return</button></td>
+            `;
+            tbody.appendChild(tr);
+          });
+        })
+        .catch((error) => {
+          console.error("Error loading issued books:", error);
+        });
+    }
+
+    // Handle form submission
+    document.getElementById("issueBookForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+
+      fetch("issue_book.php", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            alert("Book issued successfully!");
+            this.reset();
+            loadIssuedBooks();
+          } else {
+            alert("Error issuing book: " + data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Error issuing book. Please try again.");
+        });
+    });
+
+    // Handle book return
+    function returnBook(issueId) {
+      if (confirm("Are you sure you want to return this book?")) {
+        fetch("return_book.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: `issue_id=${issueId}`,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert("Book returned successfully!");
+              loadIssuedBooks();
+            } else {
+              alert("Error returning book: " + data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error returning book. Please try again.");
+          });
+      }
+    }
+  </script>
+</body>
+</html>
